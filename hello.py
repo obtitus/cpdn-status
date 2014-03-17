@@ -24,10 +24,9 @@ def strfdelta(total_seconds):
         ret += ' {:.0f} minute'.format(minutes)
         if minutes > 1:
             ret += 's'
-    if seconds != 0:
-        ret += ' {:.0f} second'.format(seconds)
-        if seconds > 1:
-            ret += 's'
+    ret += ' {:.0f} second'.format(seconds)
+    if seconds != 1:
+        ret += 's'
     return ret
 
 @app.route('/')
@@ -41,6 +40,7 @@ def hello():
         response = urllib2.urlopen('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + server_status)
         html = response.read()
         write_file(html, server_status)
+        age = 0
     else:
         html = read_file(server_status)
 
@@ -62,6 +62,11 @@ def hello():
         append_line_file(new_data, csv)
 
     data = list(read_csv(csv))
+    for row in data:
+        try:
+            row[0] = float(row[0])
+        except ValueError:
+            pass
     now = strfdelta(age)
     r = render_template('server_status.html', now=now, table=table, data=data)
     #app.logger.debug(r)
