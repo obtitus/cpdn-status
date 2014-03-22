@@ -9,55 +9,46 @@ import parse_server_status
 
 from jinja2 import Template
 
+import subprocess
 import logging
 logger = logging.getLogger('cpdn_status')
 
-def strfdelta(total_seconds):
-    hours, remainder = divmod(total_seconds, 60*60)
-    minutes, seconds = divmod(remainder, 60)
-    ret = ''
-    if hours != 0:
-        ret += '{:.0f} hour'.format(hours)
-        if hours > 1:
-            ret += 's'
-    if minutes != 0:
-        ret += ' {:.0f} minute'.format(minutes)
-        if minutes > 1:
-            ret += 's'
-    ret += ' {:.0f} second'.format(seconds)
-    if seconds != 1:
-        ret += 's'
-    return ret
+join = os.path.join
+root = os.path.dirname(os.path.abspath(__file__))
 
-def main():
+def main(page='server_status.html'):
+    cache = join(root, 'cache', page)
+    csv = join(root, 'storage', page.replace('.html', '.csv'))
+    template = join(root, 'templates', page)
+    output = join(root, 'output', page)
+
     now = time.time()
-    server_status = 'cache/server_status.html'
-    age = file_age(server_status, now=now)
-    old = age > 1*60*60 # 1 hour
+    age = file_age(cache, now=now)
+    old = age > 0.1*60*60 # 0.1 hour
     if old:
-        logger.debug('Fetching %s', server_status)
-        response = urllib2.urlopen('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html')
+        logger.debug('Fetching %s', cache)
+        response = urllib2.urlopen('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + page)
         html = response.read()
-        write_file(html, server_status)
+        write_file(html, cache)
         age = 0
     else:
-        html = read_file(server_status)
+        html = read_file(cache)
 
     ready_to_send, in_progress = parse_server_status.parse(html)
     table = list(itertools.chain(ready_to_send, in_progress))
 
-    csv = 'storage/server_status.csv'
     if old:
         if not(os.path.isfile(csv)): 
            header = ["%s" % row[0] for row in table]
+           new_data.insert(0, 'date')
            header = ", ".join(header)
-           logger.debug('Adding "%s" to server_status.csv', header)
+           logger.debug('Adding "%s" to %s', header, csv)
            append_line_file(header, csv)
 
         new_data = ["%s" % row[1] for row in table]
         new_data.insert(0, "%d" % now)
         new_data = ", ".join(new_data)
-        logger.debug('Adding "%s" to server_status.csv', new_data)
+        logger.debug('Adding "%s" to %s', new_data, csv)
         append_line_file(new_data, csv)
 
     data = list(read_csv(csv))
@@ -66,13 +57,14 @@ def main():
             row[0] = float(row[0])
         except ValueError:
             pass
-    #now = strfdelta(age)
-    now = time.ctime(now)
-    template = Template(read_file('templates/server_status.html'))
-    #r = render_template('server_status.html', now=now, table=table, data=data)
-    r = template.render(now=now, table=table, data=data)
-    write_file(r, 'output/server_status.html')
+
+    now = time.ctime(now-age)
+
+    t = Template(read_file(template))
+    r = t.render(now=now, table=table, data=data)
+    write_file(r, output)
     #logger.debug(r)
+
     return r
 
 if __name__ == '__main__':

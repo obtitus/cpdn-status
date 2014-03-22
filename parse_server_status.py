@@ -21,7 +21,7 @@ def parse(html):
         r = getRowData(tr, 'Tasks in progress')
         if r and len(r) == 2:
             r[1] = toInt(r[1])
-            in_progress.append(r)
+            in_progress = [r]
 
     return ready_to_send, in_progress
 
