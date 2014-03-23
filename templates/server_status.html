@@ -1,7 +1,98 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html lang="en">
 <head>
-    <title>CPDN Server status, latest update {{now}}</title>
+    <title>CPDN Server status, latest update {{now_str}}</title>
+
+    <!-- style is from http://css-tricks.com/complete-guide-table-element/ -->
+<style>
+body{
+  padding: 1em;
+}
+a{
+  color: #739931;
+}
+.page{
+  max-width: 60em;
+  margin: 0 auto;
+}
+table th,
+table td{
+  text-align: right;
+}
+table.layout{
+  border-collapse: collapse;
+}
+table.display{
+  margin: 1em 0;
+}
+table.display th,
+table.display td{
+  border: 1px solid #B3BFAA;
+  padding: .5em 1em;
+}
+
+table.display th{ background: #D5E0CC; }
+table.display td{ background: #fff; }
+
+table.responsive-table{
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 30em){
+    table.responsive-table{
+      box-shadow: none;  
+    }
+    table.responsive-table thead{
+      display: none; 
+    }
+  table.display th,
+  table.display td{
+    padding: .5em;
+  }
+    
+  table.responsive-table td:nth-child(1):before{
+    content: 'Name';
+  }
+  table.responsive-table td:nth-child(2):before{
+    content: 'Number';
+  }
+  table.responsive-table td:nth-child(1),
+  table.responsive-table td:nth-child(2){
+    padding-left: 25%;
+  }
+  table.responsive-table td:nth-child(1):before,
+  table.responsive-table td:nth-child(2):before{
+    position: absolute;
+    left: .5em;
+    font-weight: bold;
+  }
+  
+    table.responsive-table tr,
+    table.responsive-table td{
+        display: block;
+    }
+    table.responsive-table tr{
+        position: relative;
+        margin-bottom: 1em;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+    }
+    table.responsive-table td{
+        border-top: none;
+    }
+    table.responsive-table td.organisationnumber{
+        background: #D5E0CC;
+        border-top: 1px solid #B3BFAA;
+    }
+    table.responsive-table td.actions{
+        position: absolute;
+        top: 0;
+        right: 0;
+        border: none;
+        background: none;
+    }
+}
+</style>
+</head>
 
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -17,73 +108,132 @@
     <script type="text/javascript" src="http://www.google.com/jsapi"></script>
 
     <script type="text/javascript">
-      google.load("visualization", "1", {packages:["annotationchart"]});
+    google.load('visualization', '1.1', {packages: ['corechart', 'controls']});
+     // google.load("visualization", "1", {packages:["annotationchart"]});
+     // google.load("visualization", "1", {packages:["controls"]});
       google.setOnLoadCallback(drawChart);
-      function drawChart() {
-        drawReady()
-        drawProgress()
-      }
 
-      function drawReady() {
-	  var data = new google.visualization.DataTable();
-	  data.addColumn('datetime', 'Date')
-	  {%- for header in data[0][1:-2]: %}
-          data.addColumn('number', '{{header}}')
-	  {%- endfor %}
+function getControl_wrapper(id) {
+    var control = new google.visualization.ControlWrapper({
+        'controlType': 'ChartRangeFilter',
+        'containerId': id,
+        'options': {
+	    // Filter by the date axis.
+	    'filterColumnIndex': 0,
+	    'ui': {
+		'chartType': 'LineChart',
+		'chartOptions': {
+		    'chartArea': {'width': '75%'},
+		    'hAxis': {'baselineColor': 'none'}
+		},
+		// 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
+		'minRangeSize': 86400000
+	    }
+        },
+        // Initial range: 1 week
+        'state': {'range': {'start': new Date({{now*1000-86400000*7}})}}
+    });
+    return control
+}
 
-	  {%- for row in data[1:]: %}
-          data.addRow([new Date({{1000*row[0]}}),
-		       {%- for e in row[1:-3]: -%}
-		         {{e}},
-		       {%- endfor -%}
-		       {{row[-3]}}])
-	  {%- endfor %}
-      
-          var options = {
-              title: 'Ready to send',
-              hAxis: {title: 'Date',  titleTextStyle: {color: '#333'}},
-              vAxis: {minValue: 0},
-              isStacked: true,
-              explorer: {},
-	      // Allow multiple simultaneous selections.
-	      selectionMode: 'multiple',
-	      // Group selections by x-value.
-	      aggregationTarget: 'category',
-	      areaOpacity: 1,
-	      focusTarget: 'category'
-          };
-	  
-	  var chart = new google.visualization.AreaChart(document.getElementById("chart_ready"));
-	  chart.draw(data, options);
-      }	  
-      function drawProgress() {
-	  var data = new google.visualization.DataTable();
-	  data.addColumn('datetime', 'Date')
-	  {%- for header in data[0][-1:]: %}
-          data.addColumn('number', '{{header}}')
-	  {%- endfor %}
-	  
-	  {%- for row in data[1:]: %}
-          data.addRow([new Date({{1000*row[0]}}), {{row[-1]}},])
-	  {%- endfor %}
-	  
-          var options = {
-              title: 'In progress',
-              hAxis: {title: 'Date',  titleTextStyle: {color: '#333'}},
-		  <!-- vAxis: {minValue: 0}, -->
-		  isStacked: true,
-              explorer: {}
-          };
-	  
-	  var chart = new google.visualization.LineChart(document.getElementById("chart_progress"));
-	  chart.draw(data, options);
-      }
+function drawChart() {
+    var control = getControl_wrapper('control_ready')
+    var chart = new google.visualization.ChartWrapper({
+        'chartType': 'AreaChart',
+        'containerId': 'chart_ready',
+	'options': {
+	    'title': 'Ready to send',
+            'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
+            'vAxis': {'minValue': 0},
+            'isStacked': true,
+            'explorer': {},
+	    // Allow multiple simultaneous selections.
+	    'selectionMode': 'multiple',
+	    // Group selections by x-value.
+	    'aggregationTarget': 'category',
+	    'areaOpacity': 1,
+	    'focusTarget': 'category'
+	}
+    });
+    
+    var data = getData_ready();
+    var dashboard = new google.visualization.Dashboard(
+        document.getElementById('dashboard_ready'));
+
+    dashboard.bind(control, chart);
+    dashboard.draw(data);
+
+    var control = getControl_wrapper('control_progress')
+    var chart = new google.visualization.ChartWrapper({
+        'chartType': 'LineChart',
+        'containerId': 'chart_progress',
+	'options': {
+            'title': 'In progress',
+            'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
+	    'isStacked': true,
+            'explorer': {}
+	}
+    });
+
+    var data = getData_progress()
+    var dashboard = new google.visualization.Dashboard(
+        document.getElementById('dashboard_progress'));
+
+    dashboard.bind(control, chart);
+    dashboard.draw(data);
+};
+
+function getData_ready() {
+    var data = new google.visualization.DataTable();
+    data.addColumn('datetime', 'Date')
+    {%- for header in data[0][1:-2]: %}
+    data.addColumn('number', '{{header}}')
+    {%- endfor %}
+
+    {%- for row in data[1:]: %}
+    data.addRow([new Date({{1000*row[0]}}),
+		 {%- for e in row[1:-3]: -%}
+		 {{e}},
+		 {%- endfor -%}
+		 {{row[-3]}}])
+    {%- endfor %}	  
+    return data;
+};
+
+function getData_progress() {
+    var data = new google.visualization.DataTable();
+    data.addColumn('datetime', 'Date')
+    {%- for header in data[0][-1:]: %}
+    data.addColumn('number', '{{header}}')
+    {%- endfor %}
+    
+    {%- for row in data[1:]: %}
+    data.addRow([new Date({{1000*row[0]}}), {{row[-1]}},])
+    {%- endfor %}
+
+    return data;
+};
     </script>
 
 </head>
 <body>
-  <h1>CPDN Server status, latest update {{now}}</h1>
-  <table>
+  <h1>CPDN Server status, latest update {{now_str}}</h1>
+  <p style="width:500px;">
+    This site monitors 
+    <a href=http://climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html> climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html</a>
+    and shows current and historical data. 
+    Below is a table showing the latest state and two charts displaying number of task ready to be sent
+    and number of tasks in progress.
+    Each chart has a slider at the bottom to adjust the time span.
+  </p>
+  <table class="layout display responsive-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Number</th>
+        </tr>
+    </thead>
+    <tbody>
     {%- for row in table %}
     <tr>
       {%- for column in row %}
@@ -94,7 +244,13 @@
   </table>
 </body>
 
-<div id="chart_ready" style="width: 900px; height: 400px;"></div>
-<div id="chart_progress" style="width: 900px; height: 400px;"></div>
+ <div id="dashboard_ready">
+   <div id="chart_ready" style='max-width: 915px; height: 300px;'></div>
+   <div id="control_ready" style='max-width: 915px; height: 50px;'></div>
+ </div>
 
+ <div id="dashboard_progress">
+   <div id="chart_progress" style='width: 915px; height: 300px;'></div>
+   <div id="control_progress" style='width: 915px; height: 50px;'></div>
+ </div>
 </html>
