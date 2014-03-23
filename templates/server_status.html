@@ -123,7 +123,7 @@ function getControl_wrapper(id) {
 	    'ui': {
 		'chartType': 'LineChart',
 		'chartOptions': {
-		    'chartArea': {'width': '75%'},
+		    'chartArea': {'left':"5%", 'width':"70%"},
 		    'hAxis': {'baselineColor': 'none'}
 		},
 		// 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
@@ -144,9 +144,10 @@ function drawChart() {
 	'options': {
 	    'title': 'Ready to send',
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
-            'vAxis': {'minValue': 0},
+	    // 'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
             'isStacked': true,
             'explorer': {},
+	    'chartArea': {'left':"5%", 'width':"70%"},
 	    // Allow multiple simultaneous selections.
 	    'selectionMode': 'multiple',
 	    // Group selections by x-value.
@@ -170,8 +171,10 @@ function drawChart() {
 	'options': {
             'title': 'In progress',
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
+	    // 'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
 	    'isStacked': true,
-            'explorer': {}
+            'explorer': {},
+	    'chartArea': {'left':"5%", 'width':"70%"}
 	}
     });
 
