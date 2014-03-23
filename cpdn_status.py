@@ -11,10 +11,23 @@ from jinja2 import Template
 
 import subprocess
 import logging
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('cpdn_status')
+logger.setLevel(logging.DEBUG)
 
 join = os.path.join
 root = os.path.dirname(os.path.abspath(__file__))
+
+def get_html(url, cache):
+    logger.debug('Fetching %s', url)
+    try:
+        response = urllib2.urlopen(url)
+        html = response.read()
+    except:
+        logger.exception('Fetch failed:')
+        return ''
+    write_file(html, cache)
+    return html
 
 def main(page='server_status.html'):
     cache = join(root, 'cache', page)
@@ -26,12 +39,12 @@ def main(page='server_status.html'):
     age = file_age(cache, now=now)
     old = age > 0.1*60*60 # 0.1 hour
     if old:
-        logger.debug('Fetching %s', cache)
-        response = urllib2.urlopen('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + page)
-        html = response.read()
-        write_file(html, cache)
-        age = 0
-    else:
+        html = get_html('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + page, cache)
+        if html == '': # fetch failed
+            old = False
+        else:
+            age = 0
+    if not(old):
         html = read_file(cache)
 
     ready_to_send, in_progress = parse_server_status.parse(html)
@@ -58,10 +71,10 @@ def main(page='server_status.html'):
         except ValueError:
             pass
 
-    now = time.ctime(now-age)
+    now_str = time.ctime(now-age)
 
     t = Template(read_file(template))
-    r = t.render(now=now, table=table, data=data)
+    r = t.render(now_str=now_str, now=now, table=table, data=data)
     write_file(r, output)
     #logger.debug(r)
 
