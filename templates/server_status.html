@@ -123,7 +123,7 @@ function getControl_wrapper(id) {
 	    'ui': {
 		'chartType': 'LineChart',
 		'chartOptions': {
-		    'chartArea': {'left':"5%", 'width':"70%"},
+		    'chartArea': {'left':"8%", 'width':"65%"},
 		    'hAxis': {'baselineColor': 'none'}
 		},
 		// 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
@@ -144,10 +144,10 @@ function drawChart() {
 	'options': {
 	    'title': 'Ready to send',
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
-	    // 'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
+	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
             'isStacked': true,
             'explorer': {},
-	    'chartArea': {'left':"5%", 'width':"70%"},
+	    'chartArea': {'left':"8%", 'width':"65%"},
 	    // Allow multiple simultaneous selections.
 	    'selectionMode': 'multiple',
 	    // Group selections by x-value.
@@ -157,12 +157,12 @@ function drawChart() {
 	}
     });
     
-    var data = getData_ready();
-    var dashboard = new google.visualization.Dashboard(
+    var data_ready = getData_ready();
+    var dashboard_ready = new google.visualization.Dashboard(
         document.getElementById('dashboard_ready'));
 
-    dashboard.bind(control, chart);
-    dashboard.draw(data);
+    dashboard_ready.bind(control, chart);
+    dashboard_ready.draw(data_ready);
 
     var control = getControl_wrapper('control_progress')
     var chart = new google.visualization.ChartWrapper({
@@ -171,26 +171,28 @@ function drawChart() {
 	'options': {
             'title': 'In progress',
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
-	    // 'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
+	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
 	    'isStacked': true,
             'explorer': {},
-	    'chartArea': {'left':"5%", 'width':"70%"}
+	    'chartArea': {'left':"8%", 'width':"65%"}
 	}
     });
 
-    var data = getData_progress()
-    var dashboard = new google.visualization.Dashboard(
+    var data_progress = getData_progress()
+    var dashboard_progress = new google.visualization.Dashboard(
         document.getElementById('dashboard_progress'));
 
-    dashboard.bind(control, chart);
-    dashboard.draw(data);
+    dashboard_progress.bind(control, chart);
+    dashboard_progress.draw(data_progress);
+    window.onresize = function(){dashboard_ready.draw(data_ready);
+				 dashboard_progress.draw(data_progress)};
 };
 
 function getData_ready() {
     var data = new google.visualization.DataTable();
     data.addColumn('datetime', 'Date')
     {%- for header in data[0][1:-2]: %}
-    data.addColumn('number', '{{header}}')
+    data.addColumn('number', '{{header.replace('Tasks ready to send', '')}}')
     {%- endfor %}
 
     {%- for row in data[1:]: %}
@@ -217,6 +219,7 @@ function getData_progress() {
     return data;
 };
     </script>
+
 
 </head>
 <body>
@@ -248,12 +251,12 @@ function getData_progress() {
 </body>
 
  <div id="dashboard_ready">
-   <div id="chart_ready" style='max-width: 915px; height: 300px;'></div>
-   <div id="control_ready" style='max-width: 915px; height: 50px;'></div>
+   <div id="chart_ready" style='max-width: 1024px; height: 400px;'></div>
+   <div id="control_ready" style='max-width: 1024px; height: 50px;'></div>
  </div>
 
  <div id="dashboard_progress">
-   <div id="chart_progress" style='width: 915px; height: 300px;'></div>
-   <div id="control_progress" style='width: 915px; height: 50px;'></div>
+   <div id="chart_progress" style='max-width: 1024px; height: 400px;'></div>
+   <div id="control_progress" style='max-width: 1024px; height: 50px;'></div>
  </div>
 </html>
