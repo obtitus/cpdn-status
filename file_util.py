@@ -16,7 +16,7 @@ def append_line_file(content, filename):
         return f.write(content+'\n')
 
 def file_age(filename, now=None):
-    """returns age of file, in hours"""
+    """returns age of file, in seconds"""
     if now == None:
         now = time.time()
 

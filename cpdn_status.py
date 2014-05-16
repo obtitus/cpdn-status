@@ -1,7 +1,7 @@
 import urllib2
-import datetime
 import itertools
-import time
+#import time
+import datetime
 import os
 
 from file_util import *
@@ -17,6 +17,16 @@ logger.setLevel(logging.DEBUG)
 
 join = os.path.join
 root = os.path.dirname(os.path.abspath(__file__))
+
+def utc_now():
+    """From http://stackoverflow.com/questions/15940280/utc-time-in-python
+    Seconds since 1970.1.1 in UTC.
+    """
+    now_datetime = datetime.datetime.utcnow()
+    td = (now_datetime - datetime.datetime(1970, 1, 1))
+    # backward compatible to timedelta.total_seconds() according to documentation.
+    now_datetime = now_datetime.replace(microsecond=0)
+    return now_datetime, (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
 def get_html(url, cache):
     logger.debug('Fetching %s', url)
@@ -35,13 +45,15 @@ def main(page='server_status.html'):
     template = join(root, 'templates', page)
     output = join(root, 'output', page)
 
-    now = time.time()
+    fetch_failed = False
+    now_datetime, now = utc_now()
     age = file_age(cache, now=now)
     old = age > 0.1*60*60 # 0.1 hour
     if old:
         html = get_html('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + page, cache)
         if html == '': # fetch failed
             old = False
+            fetch_failed = True
         else:
             age = 0
     if not(old):
@@ -65,16 +77,26 @@ def main(page='server_status.html'):
         append_line_file(new_data, csv)
 
     data = list(read_csv(csv))
-    for row in data:
+    ix = 0
+    while ix < len(data):
+        row = data[ix]
+        if len(row) != 9:
+            print 'Illegal row, 9 != len(row) = ', len(row), row
+            del data[ix]
+        else:
+            ix += 1
+
         try:
             row[0] = float(row[0])
         except ValueError:
             pass
 
-    now_str = time.ctime(now-age)
+    #now_str = time.ctime(now-age)
+    now_str = str(now_datetime)
 
     t = Template(read_file(template))
-    r = t.render(now_str=now_str, now=now, table=table, data=data)
+    age_str = str(datetime.timedelta(seconds=age))
+    r = t.render(now=now, now_str=now_str, table=table, data=data, fetch_failed=fetch_failed, age_str=age_str)
     write_file(r, output)
     #logger.debug(r)
 

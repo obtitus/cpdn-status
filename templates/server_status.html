@@ -1,7 +1,8 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html lang="en">
 <head>
-    <title>CPDN Server status, latest update {{now_str}}</title>
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <title>CPDN Server status</title>
 
     <!-- style is from http://css-tricks.com/complete-guide-table-element/ -->
 <style>
@@ -108,36 +109,32 @@ table.responsive-table{
     <script type="text/javascript" src="http://www.google.com/jsapi"></script>
 
     <script type="text/javascript">
-    google.load('visualization', '1.1', {packages: ['corechart', 'controls']});
-     // google.load("visualization", "1", {packages:["annotationchart"]});
-     // google.load("visualization", "1", {packages:["controls"]});
-      google.setOnLoadCallback(drawChart);
+google.load('visualization', '1.1', {packages: ['corechart', 'controls']});
+google.setOnLoadCallback(drawChart);
 
 function getControl_wrapper(id) {
     var control = new google.visualization.ControlWrapper({
         'controlType': 'ChartRangeFilter',
         'containerId': id,
         'options': {
-	    // Filter by the date axis.
-	    'filterColumnIndex': 0,
+	    'filterColumnIndex': 0, // Filter by the date axis.
 	    'ui': {
 		'chartType': 'LineChart',
 		'chartOptions': {
-		    'chartArea': {'left':"8%", 'width':"65%"},
+		    'chartArea': {'left': "8%", 'width': "65%"},
 		    'hAxis': {'baselineColor': 'none'}
 		},
-		// 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
-		'minRangeSize': 86400000
+		'minRangeSize': 86400000 // 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
 	    }
         },
         // Initial range: 1 week
         'state': {'range': {'start': new Date({{now*1000-86400000*7}})}}
     });
-    return control
+    return control;
 }
 
 function drawChart() {
-    var control = getControl_wrapper('control_ready')
+    var control = getControl_wrapper('control_ready');
     var chart = new google.visualization.ChartWrapper({
         'chartType': 'AreaChart',
         'containerId': 'chart_ready',
@@ -146,8 +143,8 @@ function drawChart() {
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
 	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
             'isStacked': true,
-            'explorer': {},
-	    'chartArea': {'left':"8%", 'width':"65%"},
+            // 'explorer': {},
+	    'chartArea': {'left': "8%", 'width': "65%"},
 	    // Allow multiple simultaneous selections.
 	    'selectionMode': 'multiple',
 	    // Group selections by x-value.
@@ -164,7 +161,7 @@ function drawChart() {
     dashboard_ready.bind(control, chart);
     dashboard_ready.draw(data_ready);
 
-    var control = getControl_wrapper('control_progress')
+    var control = getControl_wrapper('control_progress');
     var chart = new google.visualization.ChartWrapper({
         'chartType': 'LineChart',
         'containerId': 'chart_progress',
@@ -173,26 +170,26 @@ function drawChart() {
             'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
 	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
 	    'isStacked': true,
-            'explorer': {},
+            // 'explorer': {},
 	    'chartArea': {'left':"8%", 'width':"65%"}
 	}
     });
 
-    var data_progress = getData_progress()
+    var data_progress = getData_progress();
     var dashboard_progress = new google.visualization.Dashboard(
         document.getElementById('dashboard_progress'));
 
     dashboard_progress.bind(control, chart);
     dashboard_progress.draw(data_progress);
     window.onresize = function(){dashboard_ready.draw(data_ready);
-				 dashboard_progress.draw(data_progress)};
-};
+				 dashboard_progress.draw(data_progress);};
+}
 
 function getData_ready() {
     var data = new google.visualization.DataTable();
-    data.addColumn('datetime', 'Date')
+    data.addColumn('datetime', 'Date');
     {%- for header in data[0][1:-2]: %}
-    data.addColumn('number', '{{header.replace('Tasks ready to send', '')}}')
+    data.addColumn('number', '{{header.replace('Tasks ready to send', '')}}');
     {%- endfor %}
 
     {%- for row in data[1:]: %}
@@ -200,31 +197,31 @@ function getData_ready() {
 		 {%- for e in row[1:-3]: -%}
 		 {{e}},
 		 {%- endfor -%}
-		 {{row[-3]}}])
+		 {{row[-3]}}]);
     {%- endfor %}	  
     return data;
-};
+}
 
 function getData_progress() {
     var data = new google.visualization.DataTable();
-    data.addColumn('datetime', 'Date')
+    data.addColumn('datetime', 'Date');
     {%- for header in data[0][-1:]: %}
-    data.addColumn('number', '{{header}}')
+    data.addColumn('number', '{{header}}');
     {%- endfor %}
     
     {%- for row in data[1:]: %}
-    data.addRow([new Date({{1000*row[0]}}), {{row[-1]}},])
+    data.addRow([new Date({{1000*row[0]}}), {{row[-1]}}]);
     {%- endfor %}
 
     return data;
-};
+}
     </script>
-
 
 </head>
 <body>
-  <h1>CPDN Server status, latest update {{now_str}}</h1>
-  <p style="width:500px;">
+<h1>CPDN Server status, latest update {{now_str}} UTC</h1>
+
+  <p style="max-width:512px;width: auto\9; /* ie8 */;">
     This site monitors 
     <a href=http://climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html> climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html</a>
     and shows current and historical data. 
@@ -232,6 +229,12 @@ function getData_progress() {
     and number of tasks in progress.
     Each chart has a slider at the bottom to adjust the time span.
   </p>
+  {% if fetch_failed %}
+  <p style="max-width:512px;background-color:red;color:white;width: auto\9; /* ie8 */;"> 
+Server status page is currently down or unreachable (or there is a bug in this script). Last seen {{age_str}} ago.
+Note that this is only checked once every half hour.
+</p>
+{% endif %}
   <table class="layout display responsive-table">
     <thead>
         <tr>
