@@ -11,7 +11,8 @@ from jinja2 import Template
 
 import subprocess
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M")
 logger = logging.getLogger('cpdn_status')
 logger.setLevel(logging.DEBUG)
 
@@ -81,7 +82,7 @@ def main(page='server_status.html'):
     while ix < len(data):
         row = data[ix]
         if len(row) != 9:
-            print 'Illegal row, 9 != len(row) = ', len(row), row
+            logger.warning('Illegal row, %s %d', row, len(row))
             del data[ix]
         else:
             ix += 1
