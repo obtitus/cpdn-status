@@ -1,6 +1,5 @@
 import urllib2
 import itertools
-#import time
 import datetime
 import os
 
@@ -25,8 +24,8 @@ def utc_now():
     """
     now_datetime = datetime.datetime.utcnow()
     td = (now_datetime - datetime.datetime(1970, 1, 1))
-    # backward compatible to timedelta.total_seconds() according to documentation.
     now_datetime = now_datetime.replace(microsecond=0)
+    # backward compatible to timedelta.total_seconds() according to documentation.
     return now_datetime, (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10**6
 
 def get_html(url, cache):
@@ -92,14 +91,12 @@ def main(page='server_status.html'):
         except ValueError:
             pass
 
-    #now_str = time.ctime(now-age)
     now_str = str(now_datetime)
 
     t = Template(read_file(template))
     age_str = str(datetime.timedelta(seconds=age))
     r = t.render(now=now, now_str=now_str, table=table, data=data, fetch_failed=fetch_failed, age_str=age_str)
     write_file(r, output)
-    #logger.debug(r)
 
     return r
 
