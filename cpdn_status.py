@@ -1,19 +1,18 @@
+# Standard python imports
 import urllib2
 import itertools
 import datetime
 import os
-
-from file_util import *
-import parse_server_status
-
-from jinja2 import Template
-
-import subprocess
 import logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     datefmt="%Y-%m-%d %H:%M")
 logger = logging.getLogger('cpdn_status')
 logger.setLevel(logging.DEBUG)
+# Non-standard python
+from jinja2 import Template
+# This project:
+from file_util import *
+import parse_server_status
 
 join = os.path.join
 root = os.path.dirname(os.path.abspath(__file__))
@@ -39,6 +38,21 @@ def get_html(url, cache):
     write_file(html, cache)
     return html
 
+def writeCSV(csv, now, table):
+    if not(os.path.isfile(csv)): # new file, create header
+       header = ["%s" % row[0] for row in table]
+       new_data.insert(0, 'date')
+       header = ", ".join(header)
+       logger.debug('Adding "%s" to %s', header, csv)
+       append_line_file(header, csv)
+
+    new_data = ["%s" % row[1] for row in table]
+    new_data.insert(0, "%d" % now)
+    new_data = ", ".join(new_data)
+    logger.debug('Adding "%s" to %s', new_data, csv)
+    append_line_file(new_data, csv)
+
+
 def main(page='server_status.html'):
     cache = join(root, 'cache', page)
     csv = join(root, 'storage', page.replace('.html', '.csv'))
@@ -63,18 +77,7 @@ def main(page='server_status.html'):
     table = list(itertools.chain(ready_to_send, in_progress))
 
     if old:
-        if not(os.path.isfile(csv)): 
-           header = ["%s" % row[0] for row in table]
-           new_data.insert(0, 'date')
-           header = ", ".join(header)
-           logger.debug('Adding "%s" to %s', header, csv)
-           append_line_file(header, csv)
-
-        new_data = ["%s" % row[1] for row in table]
-        new_data.insert(0, "%d" % now)
-        new_data = ", ".join(new_data)
-        logger.debug('Adding "%s" to %s', new_data, csv)
-        append_line_file(new_data, csv)
+        writeCSV(csv, now, table)
 
     data = list(read_csv(csv))
     ix = 0
