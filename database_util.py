@@ -52,7 +52,7 @@ class Database(object):
             yield row[0]
 
     def select_names(self):
-        for row in self.c.execute('SELECT DISTINCT name FROM %s' % self.table_name):
+        for row in self.c.execute('SELECT DISTINCT name FROM %s ORDER BY name' % self.table_name):
             yield row[0]
 
     def select_count(self, name, timestamp):
@@ -91,11 +91,22 @@ def importFromCSV(csv_filename, database_filename):
     data = list(file_util.read_csv(csv_filename))
     header = data[0]
     new_entries = list()
-    for row in data[1:]:
-        if len(row) == len(header):
-            for ix in range(1, len(row)):
-                new_entries.append((header[ix].strip(), row[0], row[ix])) # name, time, count
 
+    header = ['date', 
+              'Weather At Home European region   (hadam3p_eu) Tasks ready to send', 
+              'Weather At Home Pacific North West region (hadam3p_pnw) Tasks ready to send', 
+              'Weather At Home Australia New Zealand region (hadam3p_anz) Tasks ready to send', 
+              'hadcm3n Tasks ready to send',
+              #'RAPIT project (hadcm3n) Tasks ready to send', 
+              'hadam3p (Global model only) with MOSES II land scheme Tasks ready to send', 
+              'Total  Tasks ready to send', 
+              'Tasks in progress']
+
+    for row in data[1:]:
+        if len(row) == len(header) and int(row[0]) > 1406206802-7*24*60*60:
+            for ix in range(1, len(row)):
+               new_entries.append((header[ix].strip(), row[0], row[ix])) # name, time, count
+            pass # added
         elif len(row) == 1:
             pass # ignore
         else:
