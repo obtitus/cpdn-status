@@ -40,7 +40,7 @@ class Database(object):
 
     def insert(self, values):
         try:
-            logger.info('Insert of %s', values)
+            #logger.info('inserting %s', values)
             self.c.executemany('INSERT INTO %s VALUES (?, ?, ?)' % self.table_name, values)
         except sqlite3.IntegrityError as e:
             logger.warning('Insert of "%s" failed: %s' % (values, e))
@@ -85,6 +85,29 @@ class Database(object):
 
         return header, data
 
+def importFromCSV(csv_filename, database_filename):
+    """Used to convert from old .csv format to database"""
+    import file_util
+    data = list(file_util.read_csv(csv_filename))
+    header = data[0]
+    new_entries = list()
+    for row in data[1:]:
+        if len(row) == len(header):
+            for ix in range(1, len(row)):
+                new_entries.append((header[ix].strip(), row[0], row[ix])) # name, time, count
+
+        elif len(row) == 1:
+            pass # ignore
+        else:
+            print len(row), row
+
+    d = Database(database_filename, 'server_status')
+    d.insert(new_entries)
+
+    header, data = d.select_column_view()
+    print header
+    for d in data:
+        print d
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -92,16 +115,12 @@ if __name__ == '__main__':
     logger = logging.getLogger('cpdn_status')
     logger.setLevel(logging.DEBUG)
 
-    d = Database('test.sqlite', 'server_status')
-    d.insert((('name1', 2014, 123),
-              ('name2', 2014, 456),
-              ('name2', '2015', '231')))
+    # d = Database('test.sqlite', 'server_status')
+    # d.insert((('name1', 2014, 123),
+    #           ('name2', 2014, 456),
+    #           ('name2', '2015', '231')))
 
-    for row in d.select_column_view():
-        print row
+    # for row in d.select_column_view():
+    #     print row
 
-    #d.c.execute('drop table server_status_temp')
-    # for t in time:
-    #     for name in names:
-    #         for row in d.select_count(name, t):
-    #             print row
+    importFromCSV('storage/server_status.csv', 'storage/server_status.sqlite')

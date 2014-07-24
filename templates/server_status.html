@@ -187,6 +187,7 @@ function drawChart() {
 
 function getData_ready() {
     var data = new google.visualization.DataTable();
+    var None = null;
     data.addColumn('datetime', 'Date');
     {%- for head in header: %}
     data.addColumn('number', '{{head.replace('Tasks ready to send', '')}}');
