@@ -188,17 +188,17 @@ function drawChart() {
 function getData_ready() {
     var data = new google.visualization.DataTable();
     data.addColumn('datetime', 'Date');
-    {%- for header in data[0][1:-2]: %}
-    data.addColumn('number', '{{header.replace('Tasks ready to send', '')}}');
+    {%- for head in header: %}
+    data.addColumn('number', '{{head.replace('Tasks ready to send', '')}}');
     {%- endfor %}
 
     data.addRows([
     {%- for ix in range(1, data|count): %}
     [new Date({{1000*data[ix][0]}}),
-		 {%- for e in data[ix][1:-3]: -%}
+		 {%- for e in data[ix][1:-1]: -%}
 		 {{e}},
 		 {%- endfor -%}
-		 {{data[ix][-3]}}]
+		 {{data[ix][-1]}}]
     {%- if ix != data|count-1: -%}
     ,
     {%- endif -%}
@@ -210,14 +210,14 @@ function getData_ready() {
 function getData_progress() {
     var data = new google.visualization.DataTable();
     data.addColumn('datetime', 'Date');
-    {%- for header in data[0][-1:]: %}
+    {%- for header in header_in_progress: %}
     data.addColumn('number', '{{header}}');
     {%- endfor %}
     
     data.addRows([
-    {%- for ix in range(1, data|count): %}
-    [new Date({{1000*data[ix][0]}}), {{data[ix][-1]}}]
-    {%- if ix != data|count-1: -%}
+    {%- for ix in range(1, data_in_progress|count): %}
+    [new Date({{1000*data_in_progress[ix][0]}}), {{data_in_progress[ix][-1]}}]
+    {%- if ix != data_in_progress|count-1: -%}
     ,
     {%- endif -%}
     {%- endfor %}

@@ -12,6 +12,7 @@ logger.setLevel(logging.DEBUG)
 from jinja2 import Template
 # This project:
 from file_util import *
+from database_util import Database
 import parse_server_status
 
 join = os.path.join
@@ -38,24 +39,12 @@ def get_html(url, cache):
     write_file(html, cache)
     return html
 
-def writeCSV(csv, now, table):
-    if not(os.path.isfile(csv)): # new file, create header
-       header = ["%s" % row[0] for row in table]
-       new_data.insert(0, 'date')
-       header = ", ".join(header)
-       logger.debug('Adding "%s" to %s', header, csv)
-       append_line_file(header, csv)
-
-    new_data = ["%s" % row[1] for row in table]
-    new_data.insert(0, "%d" % now)
-    new_data = ", ".join(new_data)
-    logger.debug('Adding "%s" to %s', new_data, csv)
-    append_line_file(new_data, csv)
-
-
 def main(page='server_status.html'):
     cache = join(root, 'cache', page)
-    csv = join(root, 'storage', page.replace('.html', '.csv'))
+    #csv = join(root, 'storage', page.replace('.html', '.csv'))
+    database_name = join(root, 'storage', page.replace('.html', '.sqlite'))
+    table_name = page.replace('.html', '')
+    database = Database(database_name, table_name)
     template = join(root, 'templates', page)
     output = join(root, 'output', page)
 
@@ -70,35 +59,31 @@ def main(page='server_status.html'):
             fetch_failed = True
         else:
             age = 0
-    if not(old):
+    else:
         html = read_file(cache)
 
     ready_to_send, in_progress = parse_server_status.parse(html)
+    print 'READY', ready_to_send
+    print 'INPROG', in_progress
+    new_entries = list()
     table = list(itertools.chain(ready_to_send, in_progress))
+    for entry in table:
+        new_entries.append((entry[0], now, entry[1])) # name, time, count
 
     if old:
-        writeCSV(csv, now, table)
+        database.insert(new_entries)
 
-    data = list(read_csv(csv))
-    ix = 0
-    while ix < len(data):
-        row = data[ix]
-        if len(row) != 9:
-            logger.warning('Illegal row, %s %d', row, len(row))
-            del data[ix]
-        else:
-            ix += 1
-
-        try:
-            row[0] = float(row[0])
-        except ValueError:
-            pass
+    header, data = database.select_column_view(exclude=('Tasks in progress', 'Total  Tasks ready to send'))
+    print 'HEAD', header
+    print 'DATA', data
+    header_in_progress, data_in_progress = database.select_column_view(include_only=['Tasks in progress'])
 
     now_str = str(now_datetime)
 
     t = Template(read_file(template))
     age_str = str(datetime.timedelta(seconds=age))
-    r = t.render(now=now, now_str=now_str, table=table, data=data, fetch_failed=fetch_failed, age_str=age_str)
+    r = t.render(now=now, now_str=now_str, table=table, fetch_failed=fetch_failed, age_str=age_str,
+                 header=header, data=data, header_in_progress=header_in_progress, data_in_progress=data_in_progress)
     write_file(r, output)
 
     return r
