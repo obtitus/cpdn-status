@@ -63,8 +63,6 @@ def main(page='server_status.html'):
         html = read_file(cache)
 
     ready_to_send, in_progress = parse_server_status.parse(html)
-    print 'READY', ready_to_send
-    print 'INPROG', in_progress
     new_entries = list()
     table = list(itertools.chain(ready_to_send, in_progress))
     for entry in table:
