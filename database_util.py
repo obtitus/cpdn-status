@@ -126,7 +126,7 @@ if __name__ == '__main__':
     logger = logging.getLogger('cpdn_status')
     logger.setLevel(logging.DEBUG)
 
-    # d = Database('test.sqlite', 'server_status')
+    #d = Database('test.sqlite', 'server_status')
     # d.insert((('name1', 2014, 123),
     #           ('name2', 2014, 456),
     #           ('name2', '2015', '231')))
@@ -134,4 +134,8 @@ if __name__ == '__main__':
     # for row in d.select_column_view():
     #     print row
 
-    importFromCSV('storage/server_status.csv', 'storage/server_status.sqlite')
+    #importFromCSV('storage/server_status.csv', 'storage/server_status.sqlite')
+    
+    d = Database('storage/server_status.sqlite', 'server_status')
+    d.c.executescript('''DELETE FROM server_status
+                         WHERE count = 0;''')

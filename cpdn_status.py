@@ -66,7 +66,8 @@ def main(page='server_status.html'):
     new_entries = list()
     table = list(itertools.chain(ready_to_send, in_progress))
     for entry in table:
-        new_entries.append((entry[0], now, entry[1])) # name, time, count
+        if int(entry[1]) != 0:
+            new_entries.append((entry[0], now, entry[1])) # name, time, count
 
     if old:
         database.insert(new_entries)
