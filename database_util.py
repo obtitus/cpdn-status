@@ -137,5 +137,6 @@ if __name__ == '__main__':
     #importFromCSV('storage/server_status.csv', 'storage/server_status.sqlite')
     
     d = Database('storage/server_status.sqlite', 'server_status')
-    d.c.executescript('''DELETE FROM server_status
-                         WHERE count = 0;''')
+    #d.c.executescript('''DELETE FROM server_status
+    #                     WHERE count = 0;''')
+    d.c.execute('VACUUM')

@@ -209,6 +209,7 @@ function getData_ready() {
 }
 
 function getData_progress() {
+    var None = null;
     var data = new google.visualization.DataTable();
     data.addColumn('datetime', 'Date');
     {%- for header in header_in_progress: %}
