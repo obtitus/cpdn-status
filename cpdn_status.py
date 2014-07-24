@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     datefmt="%Y-%m-%d %H:%M")
 logger = logging.getLogger('cpdn_status')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # Non-standard python
 from jinja2 import Template
 # This project:
@@ -74,8 +74,6 @@ def main(page='server_status.html'):
         database.insert(new_entries)
 
     header, data = database.select_column_view(exclude=('Tasks in progress', 'Total  Tasks ready to send'))
-    print 'HEAD', header
-    print 'DATA', data
     header_in_progress, data_in_progress = database.select_column_view(include_only=['Tasks in progress'])
 
     now_str = str(now_datetime)
