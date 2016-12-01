@@ -4,95 +4,97 @@
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <title>CPDN Server status</title>
 
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">        
     <!-- style is from http://css-tricks.com/complete-guide-table-element/ -->
-<style>
-body{
-  padding: 1em;
-}
-a{
-  color: #739931;
-}
-.page{
-  max-width: 60em;
-  margin: 0 auto;
-}
-table th,
-table td{
-  text-align: right;
-}
-table.layout{
-  border-collapse: collapse;
-}
-table.display{
-  margin: 1em 0;
-}
-table.display th,
-table.display td{
-  border: 1px solid #B3BFAA;
-  padding: .5em 1em;
-}
+<!-- <style> -->
+<!-- body{ -->
+<!--   padding: 1em; -->
+<!-- } -->
+<!-- a{ -->
+<!--   color: #739931; -->
+<!-- } -->
+<!-- .page{ -->
+<!--   max-width: 60em; -->
+<!--   margin: 0 auto; -->
+<!-- } -->
+<!-- table th, -->
+<!-- table td{ -->
+<!--   text-align: right; -->
+<!-- } -->
+<!-- table.layout{ -->
+<!--   border-collapse: collapse; -->
+<!-- } -->
+<!-- table.display{ -->
+<!--   margin: 1em 0; -->
+<!-- } -->
+<!-- table.display th, -->
+<!-- table.display td{ -->
+<!--   border: 1px solid #B3BFAA; -->
+<!--   padding: .5em 1em; -->
+<!-- } -->
 
-table.display th{ background: #D5E0CC; }
-table.display td{ background: #fff; }
+<!-- table.display th{ background: #D5E0CC; } -->
+<!-- table.display td{ background: #fff; } -->
 
-table.responsive-table{
-  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
-}
+<!-- table.responsive-table{ -->
+<!-- box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2); -->
+<!-- max-width: 1024px; -->
+<!-- } -->
 
-@media (max-width: 30em){
-    table.responsive-table{
-      box-shadow: none;  
-    }
-    table.responsive-table thead{
-      display: none; 
-    }
-  table.display th,
-  table.display td{
-    padding: .5em;
-  }
+<!-- @media (max-width: 30em){ -->
+<!--     table.responsive-table{ -->
+<!--       box-shadow: none;   -->
+<!--     } -->
+<!--     table.responsive-table thead{ -->
+<!--       display: none;  -->
+<!--     } -->
+<!--   table.display th, -->
+<!--   table.display td{ -->
+<!--     padding: .5em; -->
+<!--   } -->
     
-  table.responsive-table td:nth-child(1):before{
-    content: 'Name';
-  }
-  table.responsive-table td:nth-child(2):before{
-    content: 'Number';
-  }
-  table.responsive-table td:nth-child(1),
-  table.responsive-table td:nth-child(2){
-    padding-left: 25%;
-  }
-  table.responsive-table td:nth-child(1):before,
-  table.responsive-table td:nth-child(2):before{
-    position: absolute;
-    left: .5em;
-    font-weight: bold;
-  }
+<!--   table.responsive-table td:nth-child(1):before{ -->
+<!--     content: 'Name'; -->
+<!--   } -->
+<!--   table.responsive-table td:nth-child(2):before{ -->
+<!--     content: 'Number'; -->
+<!--   } -->
+<!--   table.responsive-table td:nth-child(1), -->
+<!--   table.responsive-table td:nth-child(2){ -->
+<!--     padding-left: 25%; -->
+<!--   } -->
+<!--   table.responsive-table td:nth-child(1):before, -->
+<!--   table.responsive-table td:nth-child(2):before{ -->
+<!--     position: absolute; -->
+<!--     left: .5em; -->
+<!--     font-weight: bold; -->
+<!--   } -->
   
-    table.responsive-table tr,
-    table.responsive-table td{
-        display: block;
-    }
-    table.responsive-table tr{
-        position: relative;
-        margin-bottom: 1em;
-    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
-    }
-    table.responsive-table td{
-        border-top: none;
-    }
-    table.responsive-table td.organisationnumber{
-        background: #D5E0CC;
-        border-top: 1px solid #B3BFAA;
-    }
-    table.responsive-table td.actions{
-        position: absolute;
-        top: 0;
-        right: 0;
-        border: none;
-        background: none;
-    }
-}
-</style>
+<!--     table.responsive-table tr, -->
+<!--     table.responsive-table td{ -->
+<!--         display: block; -->
+<!--     } -->
+<!--     table.responsive-table tr{ -->
+<!--         position: relative; -->
+<!--         margin-bottom: 1em; -->
+<!--     box-shadow: 0 1px 10px rgba(0, 0, 0, 0.2); -->
+<!--     } -->
+<!--     table.responsive-table td{ -->
+<!--         border-top: none; -->
+<!--     } -->
+<!--     table.responsive-table td.organisationnumber{ -->
+<!--         background: #D5E0CC; -->
+<!--         border-top: 1px solid #B3BFAA; -->
+<!--     } -->
+<!--     table.responsive-table td.actions{ -->
+<!--         position: absolute; -->
+<!--         top: 0; -->
+<!--         right: 0; -->
+<!--         border: none; -->
+<!--         background: none; -->
+<!--     } -->
+<!-- } -->
+<!-- </style> -->
 </head>
 
 <script>
@@ -121,7 +123,7 @@ function getControl_wrapper(id) {
 	    'ui': {
 		'chartType': 'LineChart',
 		'chartOptions': {
-		    'chartArea': {'left': "8%", 'width': "65%"},
+		    'chartArea': {'left': "8%", 'width': "85%"},
 		    'hAxis': {'baselineColor': 'none'}
 		},
 		'minRangeSize': 86400000 // 1 day in milliseconds = 24 * 60 * 60 * 1000 = 86,400,000
@@ -134,17 +136,22 @@ function getControl_wrapper(id) {
 }
 
 function drawChart() {
+    var textStyle = {color: '#373737',
+		     fontName: 'Arial', // fixme: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
+		     fontSize: 16}
+    
     var control = getControl_wrapper('control_ready');
     var chart = new google.visualization.ChartWrapper({
         'chartType': 'AreaChart',
         'containerId': 'chart_ready',
 	'options': {
 	    'title': 'Ready to send',
-            'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
-	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
+	    'legend': { 'position': 'top', 'maxLines': 5, 'textStyle': textStyle},
+            'hAxis': {'title': 'Date',  'titleTextStyle': textStyle},
+	    'vAxis': {'title': 'Number',  'titleTextStyle': textStyle},
             'isStacked': true,
             // 'explorer': {},
-	    'chartArea': {'left': "8%", 'width': "65%"},
+	    'chartArea': {'left': "8%", 'width': "85%"},
 	    // Allow multiple simultaneous selections.
 	    'selectionMode': 'multiple',
 	    // Group selections by x-value.
@@ -159,7 +166,7 @@ function drawChart() {
         document.getElementById('dashboard_ready'));
 
     dashboard_ready.bind(control, chart);
-    dashboard_ready.draw(data_ready);
+    dashboard_ready.draw(data_ready, {'annotations':{1: {style: 'line'}}, 'displayAnnotations': true});
 
     var control = getControl_wrapper('control_progress');
     var chart = new google.visualization.ChartWrapper({
@@ -167,11 +174,12 @@ function drawChart() {
         'containerId': 'chart_progress',
 	'options': {
             'title': 'In progress',
-            'hAxis': {'title': 'Date',  'titleTextStyle': {'color': '#333'}},
-	    'vAxis': {'title': 'Number',  'titleTextStyle': {'color': '#333'}},
+	    'legend': { 'position': 'top', 'maxLines': 5, 'textStyle': textStyle},
+            'hAxis': {'title': 'Date',  'titleTextStyle': textStyle},
+	    'vAxis': {'title': 'Number',  'titleTextStyle': textStyle},
 	    'isStacked': true,
             // 'explorer': {},
-	    'chartArea': {'left':"8%", 'width':"65%"}
+	    'chartArea': {'left':"8%", 'width':"85%"}
 	}
     });
 
@@ -189,6 +197,11 @@ function getData_ready() {
     var data = new google.visualization.DataTable();
     var None = null;
     data.addColumn('datetime', 'Date');
+
+    // test
+    data.addColumn({type:'string', role:'annotation'});
+    data.addColumn({type:'string', role:'annotationText'});
+    
     {%- for head in header: %}
     data.addColumn('number', '{{head.replace('Tasks ready to send', '')}}');
     {%- endfor %}
@@ -230,9 +243,26 @@ function getData_progress() {
 
 </head>
 <body>
-<h1>CPDN Server status, latest update {{now_str}} UTC</h1>
+  <!-- <h1>CPDN Server status, latest update {{now_str}} UTC</h1> -->
+        <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <h1 id="project_title">Enhanced Climateprediction (<a href="climateprediction.net">CPDN</a>) status</h1>
+          <h2 id="project_tagline">CPDN Server status, latest update {{now_str}} UTC</h2>
 
-  <p style="max-width:512px;width: auto\9; /* ie8 */;">
+	  <p>See also
+	    <a href="cpdn_tasks.html" title="CPDN workunit status">
+              CPDN workunit status
+	    </a>
+	  </p>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+	<!-- <p style="max-width:512px;width: auto\9; /* ie8 */;"> -->
+	<p>
     This site monitors 
     <a href=http://climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html> climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html</a>
     and shows current and historical data. 
@@ -241,16 +271,18 @@ function getData_progress() {
     Each chart has a slider at the bottom to adjust the time span.
   </p>
   {% if fetch_failed %}
-  <p style="max-width:512px;background-color:red;color:white;width: auto\9; /* ie8 */;"> 
+	<!-- <p style="max-width:512px;background-color:red;color:white;width: auto\9; /* ie8 */;">  -->
+	<p style="background-color:red;color:white">
 Server status page is currently down or unreachable (or there is a bug in this script). Last seen {{age_str}} ago.
 Note that this is only checked once every half hour.
 </p>
 {% endif %}
   <table class="layout display responsive-table">
     <thead>
-        <tr>
-            <th>Name</th>
-            <th>Number</th>
+      <tr>
+      {%- for column in table_header %}
+      <th>{{ column }}</th>
+      {%- endfor %}	
         </tr>
     </thead>
     <tbody>
@@ -264,13 +296,35 @@ Note that this is only checked once every half hour.
   </table>
 </body>
 
- <div id="dashboard_ready">
-   <div id="chart_ready" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 400px;'></div>
-   <div id="control_ready" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 50px;'></div>
+ <!-- <div id="dashboard_ready"> -->
+ <!--   <div id="chart_ready" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 400px;'></div> -->
+ <!--   <div id="control_ready" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 50px;'></div> -->
+ <!-- </div> -->
+
+ <!-- <div id="dashboard_progress"> -->
+ <!--   <div id="chart_progress" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 400px;'></div> -->
+ <!--   <div id="control_progress" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 50px;'></div> -->
+ <!-- </div> -->
+
+  <div id="dashboard_ready">
+   <div id="chart_ready" style='height: 400px;'></div>
+   <div id="control_ready" style='height: 50px;'></div>
  </div>
 
  <div id="dashboard_progress">
-   <div id="chart_progress" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 400px;'></div>
-   <div id="control_progress" style='max-width: 1024px; width: auto\9; /* ie8 */; height: 50px;'></div>
+   <div id="chart_progress" style='height: 400px;'></div>
+   <div id="control_progress" style='height: 50px;'></div>
  </div>
+
+       </section>
+    </div>
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">This page is maintained by <a href="http://climateapps2.oerc.ox.ac.uk/cpdnboinc/show_user.php?userid=700086">Tullus</a> and is not officially affiliated with climateprediction.net</p>
+	<p class="copyright">Data &copy;<a href="climateprediction.net">climateprediction.net</a>
+	</p>
+      </footer>
+    </div>
+
 </html>

@@ -51,20 +51,20 @@ class Database(object):
         for row in self.c.execute('SELECT DISTINCT timestamp FROM %s ORDER BY timestamp' % self.table_name):
             yield row[0]
 
-    def select_names(self):
-        for row in self.c.execute('SELECT DISTINCT name FROM %s ORDER BY name' % self.table_name):
+    def select_names(self, oldest_seconds):
+        for row in self.c.execute('SELECT DISTINCT name FROM %s WHERE timestamp > %s ORDER BY name' % (self.table_name, oldest_seconds)):
             yield row[0]
 
     def select_count(self, name, timestamp):
         for row in self.c.execute('SELECT count FROM %s WHERE timestamp=%s AND name="%s"' % (self.table_name, timestamp, name)):
             yield row
 
-    def select_column_view(self, include_only=(), exclude=()):
+    def select_column_view(self, oldest_seconds, include_only=(), exclude=()):
         if include_only != ():
             header = include_only
         else:
             header = list()
-            for h in self.select_names():
+            for h in self.select_names(oldest_seconds):
                 if not(h in exclude):
                     header.append(h)
 
@@ -74,6 +74,8 @@ class Database(object):
             cmd += "    SUM(CASE WHEN name = '{0}' THEN count END) AS '{0}',\n".format(name)
         cmd = cmd[:-2] + '\n'   # strip ','
         cmd += "FROM server_status\n"
+        cmd += "WHERE timestamp > {0}\n".format(oldest_seconds)
+        #cmd += "AND instr(name, 'Mac') > 0\n"
         cmd += "GROUP BY timestamp;"
 
         logger.debug('select_column_view:\n"%s"', cmd)
