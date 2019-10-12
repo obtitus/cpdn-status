@@ -27,7 +27,7 @@ def unique(name, unique_names, recursion=1):
         return unique(name, unique_names, recursion=recursion+1)
 
 def parse(html):
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, 'lxml')
     #print soup.prettify()
     ready_to_send = list()
     in_progress = list()
@@ -37,9 +37,9 @@ def parse(html):
         header = list()
         for header_row in table.find_all('th'):
             header.append(header_row.text)
-        if len(header) > 1 and header[0] == u'Tasks by application':
-            ix_unsent = header.index(u'Unsent') - 1 # get unsent column, -1 since the u'Tasks by application' counts
-            ix_inprogress = header.index(u'In progress') - 1 # get in progress column
+        if len(header) > 1 and header[0] == u'Application':
+            ix_unsent = header.index(u'Unsent') # get unsent column
+            ix_inprogress = header.index(u'In progress') # get in progress column
             for row in table.find_all('tr'):
                 data = list()
                 for td in row.find_all('td'):
