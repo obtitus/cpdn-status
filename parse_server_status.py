@@ -27,7 +27,7 @@ def unique(name, unique_names, recursion=1):
         return unique(name, unique_names, recursion=recursion+1)
 
 def parse(html):
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html)
     #print soup.prettify()
     ready_to_send = list()
     in_progress = list()
