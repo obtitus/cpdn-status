@@ -136,42 +136,13 @@ function getControl_wrapper(id) {
 }
 
 function drawChart() {
-    var textStyle = {color: '#373737',
-		     fontName: 'Arial', // fixme: 'Myriad Pro', Calibri, Helvetica, Arial, sans-serif;
-		     fontSize: 16}
-    
-    var control = getControl_wrapper('control_ready');
-    var chart = new google.visualization.ChartWrapper({
-        'chartType': 'AreaChart',
-        'containerId': 'chart_ready',
-	'options': {
-	    'title': 'Ready to send',
-	    'legend': { 'position': 'top', 'maxLines': 5, 'textStyle': textStyle},
-            'hAxis': {'title': 'Date',  'titleTextStyle': textStyle},
-	    'vAxis': {'title': 'Number',  'titleTextStyle': textStyle},
-            'isStacked': true,
-            // 'explorer': {},
-	    'chartArea': {'left': "8%", 'width': "85%"},
-	    // Allow multiple simultaneous selections.
-	    'selectionMode': 'multiple',
-	    // Group selections by x-value.
-	    'aggregationTarget': 'category',
-	    'areaOpacity': 1,
-	    'focusTarget': 'category'
-	}
-    });
-    
-    var data_ready = getData_ready();
-    var dashboard_ready = new google.visualization.Dashboard(
-        document.getElementById('dashboard_ready'));
+    {{chart}}
 
-    dashboard_ready.bind(control, chart);
-    dashboard_ready.draw(data_ready, {'annotations':{1: {style: 'line'}}, 'displayAnnotations': true});
 
-    var control = getControl_wrapper('control_progress');
+    var control = getControl_wrapper('control_progress_total');
     var chart = new google.visualization.ChartWrapper({
         'chartType': 'LineChart',
-        'containerId': 'chart_progress',
+        'containerId': 'chart_progress_total',
 	'options': {
             'title': 'In progress',
 	    'legend': { 'position': 'top', 'maxLines': 5, 'textStyle': textStyle},
@@ -183,45 +154,18 @@ function drawChart() {
 	}
     });
 
-    var data_progress = getData_progress();
-    var dashboard_progress = new google.visualization.Dashboard(
-        document.getElementById('dashboard_progress'));
+    var data_progress_total = getData_progress_total();
+    var dashboard_progress_total = new google.visualization.Dashboard(
+        document.getElementById('dashboard_progress_total'));
 
-    dashboard_progress.bind(control, chart);
-    dashboard_progress.draw(data_progress);
+    dashboard_progress_total.bind(control, chart);
+    dashboard_progress_total.draw(data_progress_total);
     window.onresize = function(){dashboard_ready.draw(data_ready);
-				 dashboard_progress.draw(data_progress);};
+				 dashboard_progress_total.draw(data_progress_total);};
 }
 
-function getData_ready() {
-    var data = new google.visualization.DataTable();
-    var None = null;
-    data.addColumn('datetime', 'Date');
 
-    // test
-    data.addColumn({type:'string', role:'annotation'});
-    data.addColumn({type:'string', role:'annotationText'});
-    
-    {%- for head in header: %}
-    data.addColumn('number', '{{head.replace('Tasks ready to send', '')}}');
-    {%- endfor %}
-
-    data.addRows([
-    {%- for ix in range(1, data|count): %}
-    [new Date({{1000*data[ix][0]}}),
-		 {%- for e in data[ix][1:-1]: -%}
-		 {{e}},
-		 {%- endfor -%}
-		 {{data[ix][-1]}}]
-    {%- if ix != data|count-1: -%}
-    ,
-    {%- endif -%}
-    {%- endfor %}
-    ]);
-    return data;
-}
-
-function getData_progress() {
+function getData_progress_total() {
     var None = null;
     var data = new google.visualization.DataTable();
     data.addColumn('datetime', 'Date');
@@ -264,9 +208,9 @@ function getData_progress() {
 	<!-- <p style="max-width:512px;width: auto\9; /* ie8 */;"> -->
 	<p>
     This site monitors 
-    <a href=http://climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html> climateapps2.oerc.ox.ac.uk/cpdnboinc/server_status.html</a>
+    <a href=https://www.cpdn.org/cpdnboinc/server_status.php> cpdn.org/cpdnboinc/server_status.php</a>
     and shows current and historical data. 
-    Below is a table showing the latest state and two charts displaying number of task ready to be sent
+    Below is two tables showing the latest state and two charts displaying number of task ready to be sent
     and number of tasks in progress.
     Each chart has a slider at the bottom to adjust the time span.
   </p>
@@ -277,23 +221,7 @@ Server status page is currently down or unreachable (or there is a bug in this s
 Note that this is only checked once every half hour.
 </p>
 {% endif %}
-  <table class="layout display responsive-table">
-    <thead>
-      <tr>
-      {%- for column in table_header %}
-      <th>{{ column }}</th>
-      {%- endfor %}	
-        </tr>
-    </thead>
-    <tbody>
-    {%- for row in table %}
-    <tr>
-      {%- for column in row %}
-      <td>{{ column }}</td>
-      {%- endfor %}
-    </tr>
-    {%- endfor %}
-  </table>
+	{{table}}
 </body>
 
  <!-- <div id="dashboard_ready"> -->
@@ -309,11 +237,15 @@ Note that this is only checked once every half hour.
   <div id="dashboard_ready">
    <div id="chart_ready" style='height: 400px;'></div>
    <div id="control_ready" style='height: 50px;'></div>
- </div>
-
- <div id="dashboard_progress">
+  </div>
+  <div id="dashboard_progress">
    <div id="chart_progress" style='height: 400px;'></div>
    <div id="control_progress" style='height: 50px;'></div>
+ </div>
+
+ <div id="dashboard_progress_total">
+   <div id="chart_progress_total" style='height: 400px;'></div>
+   <div id="control_progress_total" style='height: 50px;'></div>
  </div>
 
        </section>
@@ -322,7 +254,15 @@ Note that this is only checked once every half hour.
     <div id="footer_wrap" class="outer">
       <footer class="inner">
         <p class="copyright">This page is maintained by <a href="http://climateapps2.oerc.ox.ac.uk/cpdnboinc/show_user.php?userid=700086">Tullus</a> and is not officially affiliated with climateprediction.net</p>
-	<p class="copyright">Data &copy;<a href="climateprediction.net">climateprediction.net</a>
+	<p class="copyright"> Donate to operating expenses and coffee for development. NOTE: This money does not go to climateprediction science, but to this webpage.</p>
+	<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+	  <input type="hidden" name="cmd" value="_s-xclick">
+	  <input type="hidden" name="hosted_button_id" value="7WEADT28FSZ98">
+	  <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+	  <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+	</form>
+
+	<p class="copyright">Data &copy;<a href="http://www.climateprediction.net">climateprediction.net</a>
 	</p>
       </footer>
     </div>

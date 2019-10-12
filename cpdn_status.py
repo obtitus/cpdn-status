@@ -5,10 +5,11 @@ import datetime
 import os
 import time
 import logging
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                    datefmt="%Y-%m-%d %H:%M")
+# logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")#,
+#                     #datefmt="%Y-%m-%d %H:%M")
 logger = logging.getLogger('cpdn_status')
 logger.setLevel(logging.INFO)
+
 # Non-standard python
 from jinja2 import Template
 # This project:
@@ -18,6 +19,16 @@ import parse_server_status
 
 join = os.path.join
 root = os.path.dirname(os.path.abspath(__file__))
+
+# fixme: move
+log_filename = join(root, 'cpdn_status.log')
+import logging.handlers
+handler = logging.handlers.RotatingFileHandler(log_filename, maxBytes=1024*32,
+                                               backupCount=5)
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 
 def utc_now(now_datetime=None):
     """From http://stackoverflow.com/questions/15940280/utc-time-in-python
@@ -33,8 +44,9 @@ def utc_now(now_datetime=None):
 def get_html(url, cache, attempt=0):
     logger.debug('Fetching %s', url)
     try:
-        response = urllib2.urlopen(url)
+        response = urllib2.urlopen(url, timeout=60)
         html = response.read()
+        logger.debug('Fetch successful %s', response)
     except Exception as e:
         if attempt > 10:
             logger.error('Fetch %d failed: %s', attempt, e)
@@ -66,6 +78,8 @@ def main(page='server_status.html'):
 
     fetch_failed = False
     now_datetime, now = utc_now()
+    # print 'now - 14 days', now, now - 60*60*24*14
+    # exit(1)
     age = file_age(cache, now=now)
     old = age > 0.1*60*60 # 0.1 hour
     if old:
@@ -79,66 +93,108 @@ def main(page='server_status.html'):
     else:
         html = read_file(cache)
 
+    logger.debug('parsing html, age = %s, old = %s, fetch_failed = %s',
+                 age, old, fetch_failed)
     ready_to_send, in_progress = parse_server_status.parse(html)
     new_entries = list()
-    table = list(itertools.chain(ready_to_send, in_progress))
+    table_ready = ready_to_send#list(itertools.chain(ready_to_send, in_progress))
+    table_progress = in_progress
 
-    if len(table) == 0:
+    # table_ready = []
+    # html = ''
+    if len(table_ready) == 0:
+        logger.warning('table empty, html = "%s"', html)
         old = False
         fetch_failed = True
     #else:
-    for entry in table:
+    for entry in itertools.chain(table_ready, table_progress):
         if int(entry[1]) != 0:
-            new_entries.append((entry[0], now, entry[1])) # name, time, count
-
+            e = (entry[0], now, entry[1])
+            new_entries.append(e) # name, time, count
+            #print 'new_entrie', e
+    
     if old:
         database.insert(new_entries)
 
     oldest_seconds = now - 60*60*24*182.5 # half a year
-    header, data = database.select_column_view(oldest_seconds, exclude=('Tasks in progress', 'Total  Tasks ready to send'))
-    header_in_progress, data_in_progress = database.select_column_view(oldest_seconds, include_only=['Tasks in progress'])
+    header_ready, data_ready = database.select_column_view(oldest_seconds,
+                                               exclude=('Tasks in progress', 'Total  Tasks ready to send'),
+                                               exclude_endswith='Tasks in progress')
 
+    header_progress, data_progress = database.select_column_view(oldest_seconds,
+                                               exclude=('Tasks in progress', 'Total  Tasks ready to send'),
+                                               exclude_endswith='Tasks ready to send')
+    # print header_progress
+    # exit(1)
+    header_in_progress, data_in_progress = database.select_column_view(oldest_seconds, include_only=['Tasks in progress'])
+    
     now_str = str(now_datetime)
 
     # print data[0], datetime.datetime.utcfromtimestamp(data[0][0])
     # print data[-1], datetime.datetime.utcfromtimestamp(data[-1][0])
     # print len(data)
-    table_header = ['Name', 'Ready to send']
-    # try:
-    #     table, table_header = parse_server_status.prettify_table(table)
-    # except Exception as e:
-    #     logger.exception('Vops, prettify failed on %s', table)
+    table_header = ['Name', 'Tasks']
+    table_ready_header = []
+    table_progress_header = []
+    try:
+        table_ready, table_ready_header = parse_server_status.prettify_table(table_ready)
+        table_progress, table_progress_header = parse_server_status.prettify_table(table_progress, 'Tasks in progress')
+    except Exception as e:
+        logger.exception('Vops, prettify failed on %s', table_ready)
 
     try:
-        header = prettify_header(header)
+        table_ready_header = prettify_header(table_ready_header)
+        table_progress_header = prettify_header(table_progress_header)
     except Exception as e:
-        logger.exception('Vops, prettify header failed on %s', header)
+        logger.exception('Vops, prettify header failed on %s, %s', table_ready_header, table_progress_header)
 
-    for ix in range(len(data)):
-        item = data[ix]
-        data[ix] = [item[0]]
-        data[ix].extend([None, None])
-        data[ix].extend(item[1:])
-        # data[ix] = list(data[ix])
-        # data[ix].append('""')
-        # data[ix].append('""')
+    # If only I remembered what this did
+    for ix in range(len(data_ready)):
+        item = data_ready[ix]
+        data_ready[ix] = [item[0]]
+        data_ready[ix].extend([None, None])
+        data_ready[ix].extend(item[1:])
+        # data_ready[ix] = list(data_ready[ix])
+        # data_ready[ix].append('""')
+        # data_ready[ix].append('""')
 
-    #data.append([now, 1,1,1,1,1,1,1,1,1,1, '"test"', '"Baz"'])
-    # data.append([now, '"test"', '"Baz"', None,None,None,None,None,None,None,None,None,None])
+    # fixme, avoid duplicate
+    for ix in range(len(data_progress)):
+        item = data_progress[ix]
+        data_progress[ix] = [item[0]]
+        data_progress[ix].extend([None, None])
+        data_progress[ix].extend(item[1:])
+        # data_progress[ix] = list(data_progress[ix])
+        # data_progress[ix].append('""')
+        # data_progress[ix].append('""')    
+
+    #data_ready.append([now, 1,1,1,1,1,1,1,1,1,1, '"test"', '"Baz"'])
+    # data_ready.append([now, '"test"', '"Baz"', None,None,None,None,None,None,None,None,None,None])
     # _, d = utc_now(datetime.datetime(day=13,month=10,year=2015))
-    # data.append([d,
+    # data_ready.append([d,
     #              '"OSTIA 198512-201011 (afr_50km)"', '"OSTIA forced hadam3p_afr runs 198512-201011. All forcings spin up simulations, 10 ensemble members of each. (2500 simulations) "', None,None,None,None,None,None,None,None,None,None])
     # _, d = utc_now(datetime.datetime(day=28,month=9,year=2015))    
-    # data.append([d,
+    # data_ready.append([d,
     #              '"PNW full batch for No-MICPs and no aerosols"', '"World without major carbon producers and sulfate emissions set to 1900 levels (4991 simulations) "', None,None,None,None,None,None,None,None,None,None])
-        
+
+    logger.debug('creating html')
+    table_template = Template(read_file(join(root, 'templates', 'table.html')))
+    table_ready_html = table_template.render(table=table_ready, table_header=table_ready_header)
+    table_progress = table_template.render(table=table_progress, table_header=table_progress_header)
+
+    chart_template = Template(read_file(join(root, 'templates', 'draw_chart.js')))
+    chart_ready = chart_template.render(data=data_ready, title='Ready to send', chart_id='ready', header=header_ready)
+    chart_progress = chart_template.render(data=data_progress, title='Tasks in progress', chart_id='progress', header=header_progress)
+#    print chart_progress
+    
     t = Template(read_file(template))
     age_str = str(datetime.timedelta(seconds=age))
-    r = t.render(now=now, now_str=now_str, table=table, table_header=table_header,
-                 fetch_failed=fetch_failed, age_str=age_str,
-                 header=header, data=data, header_in_progress=header_in_progress, data_in_progress=data_in_progress)
+    r = t.render(now=now, now_str=now_str, table=table_ready_html+ '\n' + table_progress, 
+                 fetch_failed=fetch_failed, age_str=age_str, chart=chart_ready + '\n' + chart_progress,
+                 header_in_progress=header_in_progress, data_in_progress=data_in_progress)
     write_file(r, output)
 
+    logger.debug('main: completed successfully')
     return r
 
 if __name__ == '__main__':

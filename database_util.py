@@ -40,7 +40,7 @@ class Database(object):
 
     def insert(self, values):
         try:
-            #logger.info('inserting %s', values)
+            logger.debug('inserting %s values into database', len(values))
             self.c.executemany('INSERT INTO %s VALUES (?, ?, ?)' % self.table_name, values)
         except sqlite3.IntegrityError as e:
             logger.warning('Insert of "%s" failed: %s' % (values, e))
@@ -59,13 +59,13 @@ class Database(object):
         for row in self.c.execute('SELECT count FROM %s WHERE timestamp=%s AND name="%s"' % (self.table_name, timestamp, name)):
             yield row
 
-    def select_column_view(self, oldest_seconds, include_only=(), exclude=()):
+    def select_column_view(self, oldest_seconds, include_only=(), exclude=(), exclude_endswith=''):
         if include_only != ():
             header = include_only
         else:
             header = list()
             for h in self.select_names(oldest_seconds):
-                if not(h in exclude):
+                if not(h in exclude) and not(h.endswith(exclude_endswith)):
                     header.append(h)
 
         cmd  = "CREATE VIEW server_status_column AS\n"
@@ -79,12 +79,17 @@ class Database(object):
         cmd += "GROUP BY timestamp;"
 
         logger.debug('select_column_view:\n"%s"', cmd)
-        self.c.executescript(cmd)
+
+        try:
+            self.c.executescript(cmd)
+        except sqlite3.OperationalError as e:
+            logger.exception('vops %s', e)
 
         data = list(self.c.execute('SELECT * FROM server_status_column'))
 
         self.c.execute('DROP VIEW server_status_column')
-
+        logger.debug('select_column_view done, returning %s elements', len(data))
+        
         return header, data
 
 def importFromCSV(csv_filename, database_filename):
@@ -139,6 +144,7 @@ if __name__ == '__main__':
     #importFromCSV('storage/server_status.csv', 'storage/server_status.sqlite')
     
     d = Database('storage/server_status.sqlite', 'server_status')
+    print list(d.c.executescript('''SELECT * FROM server_status WHERE timestamp > 1479460965'''))
     #d.c.executescript('''DELETE FROM server_status
     #                     WHERE count = 0;''')
     d.c.execute('VACUUM')
