@@ -1,6 +1,6 @@
 Jinja2==2.7.2
 MarkupSafe==0.19
-Werkzeug==0.15.3
+Werkzeug==0.16.0
 beautifulsoup4==4.3.2
 gunicorn==19.5.0
 itsdangerous==0.23
