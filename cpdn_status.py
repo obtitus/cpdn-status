@@ -16,6 +16,7 @@ from jinja2 import Template
 from file_util import *
 from database_util import Database
 import parse_server_status
+import parse_apps_overview
 
 join = os.path.join
 root = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,39 @@ def prettify_header(header):
             
     return header
 
+def get_html_cached(cache, url, old_age_hours=0.1):
+    fetch_failed = False
+    
+    now_datetime, now = utc_now()
+    age = file_age(cache, now=now)
+    
+    old = age > old_age_hours*60*60 # 
+    if old:
+        html = get_html(url, cache)
+        if html == '': # fetch failed
+            old = False
+            fetch_failed = True
+        else:
+            age = 0
+    else:
+        html = read_file(cache)
+
+    return old, age, html, fetch_failed
+
+
+def get_apps_to_ops():
+    # Figure out operating system
+    page = 'apps.html'
+    cache = join(root, 'cache', page)
+    url = 'https://www.cpdn.org/cpdnboinc/' + page.replace('.html', '.php')
+    
+    old, age, html, fetch_failed = get_html_cached(cache, url, old_age_hours=24*7) # expire once a week
+    
+    apps_to_ops = parse_apps_overview.parse(html)
+    apps_to_ops = parse_apps_overview.simplify_ops(apps_to_ops)
+    return apps_to_ops
+        
+
 def main(page='server_status.html'):
     cache = join(root, 'cache', page)
     #csv = join(root, 'storage', page.replace('.html', '.csv'))
@@ -80,24 +114,15 @@ def main(page='server_status.html'):
     now_datetime, now = utc_now()
     # print 'now - 14 days', now, now - 60*60*24*14
     # exit(1)
-    age = file_age(cache, now=now)
-    old = age > 0.1*60*60 # 0.1 hour
-    if old:
-        #html = get_html('http://climateapps2.oerc.ox.ac.uk/cpdnboinc/' + page, cache)
-        html = get_html('https://www.cpdn.org/cpdnboinc/' + page.replace('.html', '.php'), cache)
-        if html == '': # fetch failed
-            old = False
-            fetch_failed = True
-        else:
-            age = 0
-    else:
-        html = read_file(cache)
+
+    url = 'https://www.cpdn.org/cpdnboinc/' + page.replace('.html', '.php')
+    old, age, html, fetch_failed = get_html_cached(cache, url, old_age_hours=0.1)
 
     logger.debug('parsing html, age = %s, old = %s, fetch_failed = %s',
                  age, old, fetch_failed)
     ready_to_send, in_progress = parse_server_status.parse(html)
     new_entries = list()
-    table_ready = ready_to_send#list(itertools.chain(ready_to_send, in_progress))
+    table_ready = ready_to_send
     table_progress = in_progress
 
     # table_ready = []
@@ -130,6 +155,9 @@ def main(page='server_status.html'):
     
     now_str = str(now_datetime)
 
+    # Figure out mapping between operating system and application
+    apps_to_ops = get_apps_to_ops()
+    
     # print data[0], datetime.datetime.utcfromtimestamp(data[0][0])
     # print data[-1], datetime.datetime.utcfromtimestamp(data[-1][0])
     # print len(data)
@@ -137,7 +165,7 @@ def main(page='server_status.html'):
     table_ready_header = []
     table_progress_header = []
     try:
-        table_ready, table_ready_header = parse_server_status.prettify_table(table_ready)
+        table_ready, table_ready_header = parse_server_status.prettify_table(table_ready, apps_to_ops=apps_to_ops)
         table_progress, table_progress_header = parse_server_status.prettify_table(table_progress, 'Tasks in progress')
     except Exception as e:
         logger.exception('Vops, prettify failed on %s', table_ready)
@@ -198,4 +226,7 @@ def main(page='server_status.html'):
     return r
 
 if __name__ == '__main__':
+    # page = 'apps.html'
+    # cache = join(root, 'cache', page)
+    # html = get_html('https://www.cpdn.org/cpdnboinc/' + page.replace('.html', '.php'), cache)
     main()

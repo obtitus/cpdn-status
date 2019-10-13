@@ -54,7 +54,6 @@ def parse(html):
     
     # Get the Tasks ready to send and Tasks in progress table
     for tr in soup.find_all('tr'):
-        # seems to be stuck at 322
         r = getRowData(tr, 'Tasks ready to send')
         if r and len(r) == 2:
             r[1] = toInt(r[1])
@@ -75,51 +74,79 @@ def getRowData(row, tag='Tasks ready to send'):
             data.append(td.text)
     return data
 
-def prettify_table(table, name='Tasks ready to send'):
+def prettify_table(table, name='Tasks ready to send', apps_to_ops=None):
     """Parse the names and divide the data into operating systems"""
     ops = ['Windows', 'Linux', 'Mac']
     table_header = ['Name', name]
-    
-    # do we still have op-information?
-    for o in ops:
-        if o in table[0][0]: break
-    else:
-        # guess not
-        logger.debug('prettify_table: no operating-system information found, removing "%s" from all names', name)
-        for ix_row in range(len(table)-1):
-            if table[ix_row][0].endswith(name):
-                table[ix_row][0] = table[ix_row][0][:-len(name)]
-        return table, table_header
+
+    # Strip name from all but last rows
+    for ix_row in range(len(table)-1):
+        table[ix_row][0] = table[ix_row][0].replace(name, '').strip()
+        
+    # Do we get op information in a dictionary?
+    if apps_to_ops is not None:
+        for ix_row in range(len(table)-1): # skip last row, assume Total row.
+            app_name = table[ix_row][0]
+            
+            #print('app_name', app_name)
+            try:
+                op_names = ', '.join(apps_to_ops[app_name])
+                table[ix_row][0] = '%s (%s)' % (table[ix_row][0], op_names)
+            except KeyError:
+                logger.error('Unable to map app: "%s" to ops dict: %s' % (app_name, apps_to_ops))
     
     total = [0]*len(ops)        # zeros
+    op_found = False
     
-    for ix_row in range(len(table)):
+    for ix_row in range(len(table)-1):
         row_name, number = table[ix_row]
         
         sp = re.split('(\([^)]+\))', row_name)
-        if len(sp) == 1 and sp[0].endswith('Tasks ready to send'):
-            table[ix_row].extend(total)
-        
+
         if len(sp) <= 2: continue
-        
-        if sp[-1].strip() == 'Tasks ready to send' and '(' in sp[-2] and ')' in sp[-2]:
-            current = ['']*len(ops)
-            for ix in range(len(ops)):
-                if ops[ix] in sp[-2]: # 'Windows', 'Linux' or 'Mac'
-                    total[ix] += number
-                    current[ix] = number
+        for o in ops:
+            if o in sp[-2]:
+                break
+        else: # not found
+            continue
 
-            table[ix_row].extend(current)
+        #print('sp', sp)
+        current = [0]*len(ops)
+        for op_ix in range(len(ops)):
+            if ops[op_ix] in sp[-2]:
+                total[op_ix]   += number
+                current[op_ix] += number
+                op_found = True
 
-    table_header.extend(ops)
+        table[ix_row].extend(current)
+
+    if op_found:
+        # Header
+        table_header.extend(ops)
+        # Last row
+        ix_row += 1
+        table[ix_row].extend(total)
+
     logger.debug('prettify_table: done')
     return table, table_header
 
 if __name__ == '__main__':
+    logger = logging.getLogger('cpdn_status')
+    logger.setLevel(logging.DEBUG)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    
     c = read_file('cache/server_status.html')
     ready_to_send, in_progress = parse(c)
     for row in ready_to_send:
-        print 'ready to send row', row
+        print('ready to send row', row)
     for row in in_progress:
-        print 'in progress row', row
+        print('in progress row', row)
 
+    table_ready, table_ready_header = prettify_table(in_progress, 'Tasks in progress', apps_to_ops=apps_to_ops)
+    print('Header', table_ready_header)
+    for row in table_ready:
+        print('row', row)
